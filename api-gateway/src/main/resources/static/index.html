@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Cloud 微服务商城 Demo</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        header h1 { font-size: 1.8rem; }
+        header p { opacity: 0.85; font-size: 0.9rem; margin-top: 4px; }
+
+        .arch-bar {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 10px 40px;
+            font-size: 0.8rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .arch-bar .node {
+            background: #f0f2f5;
+            border: 1px solid #d0d5dd;
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: 0.78rem;
+        }
+
+        .arch-bar .arrow { color: #667eea; font-weight: bold; }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .full-width { grid-column: 1 / -1; }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .badge-blue { background: #e8f0fe; color: #1967d2; }
+        .badge-green { background: #e6f4ea; color: #137333; }
+        .badge-orange { background: #fef3e2; color: #b06000; }
+        .badge-purple { background: #f3e8fd; color: #8430ce; }
+        .badge-red { background: #fce8e6; color: #c5221f; }
+        .badge-gray { background: #f1f3f4; color: #5f6368; }
+
+        .card-body { padding: 20px; }
+
+        /* 商品列表 */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .product-card {
+            border: 1px solid #e8eaed;
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .product-card:hover, .product-card.selected {
+            border-color: #667eea;
+            background: #f8f6ff;
+            box-shadow: 0 0 0 2px rgba(102,126,234,0.2);
+        }
+
+        .product-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+        .product-desc { font-size: 0.75rem; color: #777; margin-bottom: 8px; line-height: 1.4; }
+        .product-price { color: #e44d26; font-weight: 700; font-size: 1rem; }
+        .product-stock { font-size: 0.75rem; color: #5f6368; margin-top: 4px; }
+        .product-stock.low { color: #c5221f; font-weight: 600; }
+
+        /* 下单表单 */
+        .order-form { display: flex; flex-direction: column; gap: 12px; }
+
+        .selected-product-info {
+            background: #f8f6ff;
+            border: 1px solid #d0c5f5;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+        }
+
+        .selected-product-info .product-summary-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .selected-product-info .product-summary-price {
+            color: #e44d26;
+            margin-top: 2px;
+        }
+
+        .form-row { display: flex; gap: 10px; align-items: flex-end; }
+
+        .form-group { flex: 1; }
+        .form-group label { font-size: 0.82rem; font-weight: 500; color: #555; margin-bottom: 4px; display: block; }
+        .form-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,0.15); }
+
+        .total-display {
+            background: #e8f5e9;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .placeholder-text {
+            color: #999;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        /* 表格 */
+        .table-wrap { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        thead th {
+            background: #f8f9fa;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            color: #5f6368;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e8eaed;
+        }
+
+        tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f3f4;
+            vertical-align: middle;
+        }
+
+        tbody tr:hover { background: #fafafa; }
+        tbody tr:last-child td { border-bottom: none; }
+
+        .empty-row td {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+            font-style: italic;
+        }
+
+        /* 自动刷新指示器 */
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .refresh-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* 通知 */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        #notification.show { transform: translateX(0); }
+        #notification.success { background: #2e7d32; }
+        #notification.error { background: #c62828; }
+        #notification.info { background: #1565c0; }
+
+        /* API地址配置 */
+        .config-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 40px;
+            background: #fff8e1;
+            border-bottom: 1px solid #ffe082;
+            font-size: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .config-bar label { font-weight: 600; color: #5f3d00; }
+
+        .config-bar input {
+            border: 1px solid #ffcc02;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            width: 220px;
+            outline: none;
+        }
+
+        .config-bar .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.78rem;
+            border: 1px solid #e0a000;
+            border-radius: 4px;
+            background: #ffd740;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .config-bar .hint { color: #795b00; }
+
+        /* 状态统计 */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 0;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number { font-size: 2rem; font-weight: 700; }
+        .stat-label { font-size: 0.75rem; color: #777; margin-top: 2px; }
+        .stat-blue .stat-number { color: #1967d2; }
+        .stat-green .stat-number { color: #137333; }
+        .stat-orange .stat-number { color: #b06000; }
+        .stat-purple .stat-number { color: #8430ce; }
+
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            .full-width { grid-column: 1; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🛍️ Spring Cloud 微服务商城 Demo</h1>
+    <p>订单服务 · 支付服务 · 库存服务 · RabbitMQ 消息队列 · Spring Cloud Gateway · Eureka 服务发现</p>
+</header>
+
+<div class="arch-bar">
+    <strong>架构：</strong>
+    <span class="node">前端 (Browser)</span>
+    <span class="arrow">→</span>
+    <span class="node">API Gateway :8080</span>
+    <span class="arrow">→</span>
+    <span class="node">Order Service :8081</span>
+    <span class="arrow">──RabbitMQ──→</span>
+    <span class="node">Payment Service :8082</span>
+    <span class="arch-bar" style="padding:0;border:none;background:none;">
+        <span class="arrow" style="margin-left:0"></span>
+        <span class="node">Inventory Service :8083</span>
+    </span>
+    <span style="margin-left:auto; color:#888; font-size:0.75rem;">Eureka Server: <a href="http://localhost:8761" target="_blank">:8761</a> | RabbitMQ: <a href="http://localhost:15672" target="_blank">:15672</a></span>
+</div>
+
+<div class="config-bar">
+    <label>API 网关地址：</label>
+    <input type="text" id="apiBase" value="http://localhost:8080" />
+    <button class="btn-sm" onclick="reloadAll()">重新加载</button>
+    <span class="hint">💡 确保已启动所有服务和 RabbitMQ，请先启动 Eureka Server → 三个业务服务 → API Gateway</span>
+</div>
+
+<div class="container">
+
+    <!-- 统计栏 -->
+    <div class="full-width stats-row">
+        <div class="stat-card stat-blue">
+            <div class="stat-number" id="stat-products">-</div>
+            <div class="stat-label">商品种类</div>
+        </div>
+        <div class="stat-card stat-orange">
+            <div class="stat-number" id="stat-orders">-</div>
+            <div class="stat-label">总订单数</div>
+        </div>
+        <div class="stat-card stat-green">
+            <div class="stat-number" id="stat-paid">-</div>
+            <div class="stat-label">支付成功</div>
+        </div>
+        <div class="stat-card stat-purple">
+            <div class="stat-number" id="stat-pending">-</div>
+            <div class="stat-label">待处理</div>
+        </div>
+    </div>
+
+    <!-- 商品列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h2>📦 商品库存 <span class="badge badge-blue">库存服务 :8083</span></h2>
+            <div class="refresh-indicator"><div class="refresh-dot"></div> 实时同步</div>
+        </div>
+        <div class="card-body">
+            <div id="product-grid" class="product-grid">
+                <div class="placeholder-text">加载商品中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下单 -->
+    <div class="card">
+        <div class="card-header">
+            <h2>🛒 立即下单 <span class="badge badge-orange">订单服务 :8081</span></h2>
+        </div>
+        <div class="card-body">
+            <div class="order-form">
+                <div id="selected-product-display" class="placeholder-text">
+                    ← 请先从左侧点击选择商品
+                </div>
+                <div class="form-row" id="qty-row" style="display:none">
+                    <div class="form-group">
+                        <label>购买数量</label>
+                        <input type="number" id="qty-input" value="1" min="1" max="999" oninput="updateTotal()" />
+                    </div>
+                    <div class="form-group" style="flex:2">
+                        <label>订单金额</label>
+                        <div class="total-display">¥ <span id="total-amount">0.00</span></div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="place-order-btn" onclick="placeOrder()" disabled>
+                    下单并发起支付
+                </button>
+                <div style="font-size:0.78rem;color:#888;text-align:center">
+                    下单后通过 RabbitMQ 异步通知支付服务和库存服务
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 订单列表 -->
+    <div class="card full-width">
+        <div class="card-header">
+            <h2>📋 订单列表 <span class="badge badge-orange">订单服务 :8081</span></h2>
+            <div class="refresh-indicator"><div class="refresh-dot"></div> 每3秒自动刷新</div>
+        </div>
+        <div class="card-body">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>订单ID</th>
+                            <th>商品名称</th>
+                            <th>单价</th>
+                            <th>数量</th>
+                            <th>总金额</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody">
+                        <tr class="empty-row"><td colspan="7">暂无订单</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 支付记录 -->
+    <div class="card">
+        <div class="card-header">
+            <h2>💳 支付记录 <span class="badge badge-green">支付服务 :8082</span></h2>
+            <div class="refresh-indicator"><div class="refresh-dot"></div> 每3秒自动刷新</div>
+        </div>
+        <div class="card-body">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>支付ID</th>
+                            <th>订单ID</th>
+                            <th>商品名称</th>
+                            <th>金额</th>
+                            <th>状态</th>
+                            <th>处理时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payments-tbody">
+                        <tr class="empty-row"><td colspan="6">暂无支付记录</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RabbitMQ 消息流说明 -->
+    <div class="card">
+        <div class="card-header">
+            <h2>🐇 RabbitMQ 消息流 <span class="badge badge-purple">消息队列</span></h2>
+        </div>
+        <div class="card-body">
+            <div style="font-size:0.85rem; line-height:2;">
+                <div style="margin-bottom:12px">
+                    <strong>Exchange：</strong><code>order.exchange</code>（Topic Exchange）<br>
+                    <strong>Routing Key：</strong><code>order.created</code>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="background:#f8f6ff;border-left:3px solid #667eea;padding:8px 12px;border-radius:0 6px 6px 0">
+                        📤 <strong>订单服务</strong> 发布消息 → <code>order.exchange</code>
+                    </div>
+                    <div style="padding-left:20px; color:#999; font-size:0.8rem">↓ 绑定路由分发</div>
+                    <div style="background:#e8f5e9;border-left:3px solid #4caf50;padding:8px 12px;border-radius:0 6px 6px 0">
+                        📥 <strong>支付服务</strong> 监听 <code>payment.queue</code> → 创建支付记录
+                    </div>
+                    <div style="background:#fff3e0;border-left:3px solid #ff9800;padding:8px 12px;border-radius:0 6px 6px 0">
+                        📥 <strong>库存服务</strong> 监听 <code>inventory.queue</code> → 扣减库存
+                    </div>
+                </div>
+                <div style="margin-top:12px; padding:10px; background:#f5f5f5; border-radius:6px; font-size:0.78rem; color:#555;">
+                    <strong>查看 RabbitMQ 管理界面：</strong>
+                    <a href="http://localhost:15672" target="_blank">http://localhost:15672</a>
+                    （用户名/密码：guest/guest）
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="notification"></div>
+
+<script>
+    let selectedProduct = null;
+    let products = [];
+    let refreshTimer = null;
+
+    function getApiBase() {
+        return document.getElementById('apiBase').value.replace(/\/$/, '');
+    }
+
+    function showNotification(msg, type = 'success') {
+        const el = document.getElementById('notification');
+        el.textContent = msg;
+        el.className = `show ${type}`;
+        setTimeout(() => { el.className = ''; }, 3500);
+    }
+
+    // ===== 商品列表 =====
+    async function loadProducts() {
+        try {
+            const res = await fetch(`${getApiBase()}/api/inventory`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            products = await res.json();
+            renderProducts();
+            document.getElementById('stat-products').textContent = products.length;
+        } catch (e) {
+            document.getElementById('product-grid').innerHTML =
+                `<div class="placeholder-text" style="color:#c62828">⚠️ 加载失败: ${e.message}<br>请确认库存服务已启动</div>`;
+            document.getElementById('stat-products').textContent = '!';
+        }
+    }
+
+    function renderProducts() {
+        const grid = document.getElementById('product-grid');
+        if (!products.length) {
+            grid.innerHTML = '<div class="placeholder-text">暂无商品</div>';
+            return;
+        }
+        grid.innerHTML = products.map(p => `
+            <div class="product-card ${selectedProduct && selectedProduct.id === p.id ? 'selected' : ''}"
+                 onclick="selectProduct(${p.id})">
+                <div class="product-name">${p.name}</div>
+                <div class="product-desc">${p.description || ''}</div>
+                <div class="product-price">¥${parseFloat(p.price).toFixed(2)}</div>
+                <div class="product-stock ${p.stock < 10 ? 'low' : ''}">
+                    库存：${p.stock} 件${p.stock < 10 ? ' ⚠️ 库存紧张' : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function selectProduct(id) {
+        selectedProduct = products.find(p => p.id === id);
+        if (!selectedProduct) return;
+
+        document.getElementById('selected-product-display').outerHTML = `
+            <div id="selected-product-display" class="selected-product-info">
+                <div class="product-summary-name">✅ ${selectedProduct.name}</div>
+                <div class="product-summary-price">单价：¥${parseFloat(selectedProduct.price).toFixed(2)}</div>
+                <div style="font-size:0.78rem;color:#777;margin-top:2px">库存：${selectedProduct.stock} 件</div>
+            </div>`;
+
+        document.getElementById('qty-row').style.display = 'flex';
+        document.getElementById('qty-input').max = selectedProduct.stock;
+        document.getElementById('qty-input').value = 1;
+        document.getElementById('place-order-btn').disabled = false;
+        updateTotal();
+        renderProducts();
+    }
+
+    function updateTotal() {
+        if (!selectedProduct) return;
+        const qty = parseInt(document.getElementById('qty-input').value) || 0;
+        const total = (qty * parseFloat(selectedProduct.price)).toFixed(2);
+        document.getElementById('total-amount').textContent = total;
+    }
+
+    // ===== 下单 =====
+    async function placeOrder() {
+        if (!selectedProduct) return;
+        const qty = parseInt(document.getElementById('qty-input').value);
+        if (!qty || qty <= 0) { showNotification('请输入有效数量', 'error'); return; }
+        if (qty > selectedProduct.stock) { showNotification(`库存不足，当前库存 ${selectedProduct.stock} 件`, 'error'); return; }
+
+        const btn = document.getElementById('place-order-btn');
+        btn.disabled = true;
+        btn.textContent = '下单中...';
+
+        try {
+            const res = await fetch(`${getApiBase()}/api/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: selectedProduct.id,
+                    productName: selectedProduct.name,
+                    quantity: qty,
+                    price: selectedProduct.price
+                })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const order = await res.json();
+            showNotification(`✅ 订单 #${order.id} 创建成功！等待支付和库存扣减...`, 'success');
+
+            // 重置表单
+            selectedProduct = null;
+            document.getElementById('qty-row').style.display = 'none';
+            document.getElementById('place-order-btn').disabled = true;
+            document.getElementById('selected-product-display').innerHTML = '← 请先从左侧点击选择商品';
+
+            // 立即刷新
+            setTimeout(() => { loadProducts(); loadOrders(); loadPayments(); }, 800);
+            setTimeout(() => { loadProducts(); loadOrders(); loadPayments(); }, 2500);
+
+        } catch (e) {
+            showNotification(`下单失败: ${e.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '下单并发起支付';
+        }
+    }
+
+    // ===== 订单列表 =====
+    async function loadOrders() {
+        try {
+            const res = await fetch(`${getApiBase()}/api/orders`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const orders = await res.json();
+            renderOrders(orders);
+
+            const total = orders.length;
+            const paid = orders.filter(o => o.status === 'PAID' || o.status === 'COMPLETED').length;
+            const pending = orders.filter(o => o.status === 'PENDING').length;
+            document.getElementById('stat-orders').textContent = total;
+            document.getElementById('stat-paid').textContent = paid;
+            document.getElementById('stat-pending').textContent = pending;
+        } catch (e) {
+            document.getElementById('orders-tbody').innerHTML =
+                `<tr class="empty-row"><td colspan="7" style="color:#c62828">加载失败: ${e.message}</td></tr>`;
+        }
+    }
+
+    function renderOrders(orders) {
+        const tbody = document.getElementById('orders-tbody');
+        if (!orders.length) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无订单，请先选择商品下单</td></tr>';
+            return;
+        }
+        tbody.innerHTML = orders.map(o => `
+            <tr>
+                <td><strong>#${o.id}</strong></td>
+                <td>${o.productName}</td>
+                <td>¥${parseFloat(o.price).toFixed(2)}</td>
+                <td>${o.quantity}</td>
+                <td><strong>¥${parseFloat(o.totalAmount).toFixed(2)}</strong></td>
+                <td>${statusBadge(o.status)}</td>
+                <td style="color:#888;font-size:0.8rem">${formatDate(o.createdAt)}</td>
+            </tr>
+        `).join('');
+    }
+
+    // ===== 支付记录 =====
+    async function loadPayments() {
+        try {
+            const res = await fetch(`${getApiBase()}/api/payments`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const payments = await res.json();
+            renderPayments(payments);
+        } catch (e) {
+            document.getElementById('payments-tbody').innerHTML =
+                `<tr class="empty-row"><td colspan="6" style="color:#c62828">加载失败: ${e.message}</td></tr>`;
+        }
+    }
+
+    function renderPayments(payments) {
+        const tbody = document.getElementById('payments-tbody');
+        if (!payments.length) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无支付记录</td></tr>';
+            return;
+        }
+        tbody.innerHTML = payments.map(p => `
+            <tr>
+                <td><strong>#${p.id}</strong></td>
+                <td>#${p.orderId}</td>
+                <td>${p.productName}</td>
+                <td><strong>¥${parseFloat(p.amount).toFixed(2)}</strong></td>
+                <td>${paymentBadge(p.status)}</td>
+                <td style="color:#888;font-size:0.8rem">${formatDate(p.processedAt)}</td>
+            </tr>
+        `).join('');
+    }
+
+    // ===== 工具函数 =====
+    function statusBadge(status) {
+        const map = {
+            'PENDING':   ['badge-gray',   '⏳ 待处理'],
+            'PAID':      ['badge-green',  '✅ 已支付'],
+            'COMPLETED': ['badge-blue',   '🎉 已完成'],
+            'FAILED':    ['badge-red',    '❌ 失败'],
+        };
+        const [cls, label] = map[status] || ['badge-gray', status];
+        return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function paymentBadge(status) {
+        const map = {
+            'PROCESSING': ['badge-orange', '⏳ 处理中'],
+            'PAID':       ['badge-green',  '✅ 已支付'],
+            'FAILED':     ['badge-red',    '❌ 失败'],
+        };
+        const [cls, label] = map[status] || ['badge-gray', status];
+        return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function formatDate(dateArr) {
+        if (!dateArr) return '-';
+        if (Array.isArray(dateArr)) {
+            const [y,mo,d,h,m,s] = dateArr;
+            return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s||0).padStart(2,'0')}`;
+        }
+        return new Date(dateArr).toLocaleString('zh-CN');
+    }
+
+    function reloadAll() {
+        loadProducts();
+        loadOrders();
+        loadPayments();
+        showNotification('数据已刷新', 'info');
+    }
+
+    // 启动定时刷新（每3秒）
+    function startAutoRefresh() {
+        loadProducts();
+        loadOrders();
+        loadPayments();
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(() => {
+            loadOrders();
+            loadPayments();
+            loadProducts();
+        }, 3000);
+    }
+
+    startAutoRefresh();
+</script>
+
+</body>
+</html>
